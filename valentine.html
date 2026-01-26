@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Valentine</title>
+  <style>
+    :root{
+      --bg:#000;
+      --white:#fff;
+      --shadow: 0 24px 90px rgba(0,0,0,.65);
+      --fadeMs: 280ms;
+      --cardMax: 980px;
+    }
+
+    /* Fonts (you said you have these in /fonts) */
+    @font-face{
+      font-family: "TextFont";
+      src: url("./fonts/TextFont.otf") format("opentype");
+      font-display: swap;
+    }
+    @font-face{
+      font-family: "ButtonFont";
+      src: url("./fonts/ButtonFont.otf") format("opentype");
+      font-display: swap;
+    }
+    @font-face{
+      font-family: "ButtonFont2";
+      src: url("./fonts/ButtonFont2.otf") format("opentype");
+      font-display: swap;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: var(--bg);
+      color: var(--white);
+      overflow:hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* Stage / scenes */
+    .stage{
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding: 28px 18px;
+    }
+    .scene{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity var(--fadeMs) ease;
+    }
+    .scene.active{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    /* Fade overlay for “intentional” transitions */
+    .fadeOverlay{
+      position:fixed;
+      inset:0;
+      background:#000;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity var(--fadeMs) ease;
+      z-index:999;
+    }
+    .fadeOverlay.on{opacity:1;}
+
+    /* Scene 1 (Letter) */
+    .poster{
+      width:min(var(--cardMax), 92vw);
+      aspect-ratio: 1 / 1;
+      background:#000;
+      box-shadow: var(--shadow);
+      position:relative;
+      display:grid;
+      grid-template-rows: 1fr auto 1fr;
+      padding: 56px 44px 44px;
+    }
+
+    .poster .topText,
+    .poster .bottomText,
+    .poster .credit{
+      font-family:"TextFont", serif;
+      text-transform:uppercase;
+      letter-spacing: .02em;
+      text-align:center;
+      text-shadow: 0 10px 32px rgba(0,0,0,.55);
+      user-select:none;
+    }
+
+    .poster .topText{
+      font-size: clamp(26px, 4.6vw, 54px);
+      align-self:start;
+      margin-top: 8px;
+    }
+    .poster .bottomText{
+      font-size: clamp(26px, 4.6vw, 54px);
+      align-self:end;
+      margin-bottom: 12px;
+    }
+    .poster .credit{
+      position:absolute;
+      right: 26px;
+      bottom: 18px;
+      font-size: clamp(16px, 2.2vw, 24px);
+      opacity:.95;
+    }
+
+    .letterWrap{
+      display:grid;
+      place-items:center;
+      position:relative;
+    }
+    .letter{
+      width:min(640px, 78%);
+      height:auto;
+      border-radius: 6px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      cursor:pointer;
+      transform-origin:center;
+      will-change: transform, filter;
+      /* subtle cinematic pulse + occasional micro-shake */
+      animation:
+        pulse 4.8s ease-in-out infinite,
+        microshake 8.6s ease-in-out infinite;
+    }
+    .letter:hover{
+      filter: brightness(1.02);
+    }
+
+    @keyframes pulse{
+      0%,100%{ transform: scale(1); }
+      50%{ transform: scale(1.012); }
+    }
+    /* shake only “hits” briefly during the cycle */
+    @keyframes microshake{
+      0%,72%,100%{ transform: translate(0,0) rotate(0) scale(1); }
+      74%{ transform: translate(-0.8px, 0.6px) rotate(-0.22deg) scale(1.012); }
+      76%{ transform: translate(0.9px, -0.7px) rotate(0.28deg) scale(1.012); }
+      78%{ transform: translate(-0.6px, 0.5px) rotate(-0.18deg) scale(1.012); }
+      80%{ transform: translate(0.5px, -0.4px) rotate(0.14deg) scale(1.012); }
+      82%{ transform: translate(0,0) rotate(0) scale(1.012); }
+    }
+
+    /* Scene 2 (WYBMV) */
+    .wybmvWrap{
+      width:min(var(--cardMax), 92vw);
+      aspect-ratio: 1 / 1;
+      background:#000;
+      box-shadow: var(--shadow);
+      display:grid;
+      place-items:center;
+      position:relative;
+    }
+
+    /* The “box area” is the baked PNG itself */
+    .wybmvBox{
+      width:min(860px, 92%);
+      aspect-ratio: 1.0 / 1.0; /* your baked wybmv.png is square-ish; adjust if needed */
+      position:relative;
+      overflow:hidden; /* IMPORTANT: keeps gifs inside the box */
+      border-radius: 26px; /* matches the rounded vibe */
+    }
+    .wybmvBox img.bg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+
+    /* GIF overlay inside the WYBMV box */
+    .gifOverlay{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity 220ms ease;
+      z-index:5;
+    }
+    .gifOverlay.show{ opacity:1; }
+    .gifOverlay img{
+      width:100%;
+      height:100%;
+      object-fit:cover; /* fills the box (stays inside) */
+      display:block;
+    }
+
+    /* Buttons sit “inside the wybmv area” */
+    .btnRow{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom: 12%;
+      display:flex;
+      justify-content:center;
+      gap: clamp(18px, 4vw, 40px);
+      z-index:10;
+      pointer-events:auto;
+    }
+
+    .btn{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      padding:0;
+      transform-origin:center;
+      transition: transform 120ms ease, filter 120ms ease;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active{ transform: translateY(2px) scale(.99); }
+
+    .btnBox{
+      width: clamp(160px, 24vw, 320px);
+      height: clamp(70px, 10vw, 120px);
+      background:#e23a3a;
+      display:grid;
+      place-items:center;
+      box-shadow: 0 14px 0 rgba(0,0,0,.35);
+    }
+    .btnBox.yes{
+      outline: 10px solid #1f7f34; /* green frame */
+      outline-offset: -10px;
+      border-radius: 8px;
+    }
+    .btnBox.no{
+      outline: 10px solid #2046ff; /* blue frame */
+      outline-offset: -10px;
+      border-radius: 8px;
+    }
+    .btnLabel{
+      font-family: "ButtonFont", "ButtonFont2", serif;
+      color:#fff;
+      font-size: clamp(34px, 6.5vw, 76px);
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      line-height:1;
+      transform: translateY(2px);
+      text-shadow: 0 8px 22px rgba(0,0,0,.35);
+    }
+
+    /* Scene 3 (Final note) */
+    .noteCard{
+      width:min(980px, 92vw);
+      min-height: min(640px, 78vh);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: clamp(22px, 4vw, 46px);
+      position:relative;
+      backdrop-filter: blur(10px);
+      display:grid;
+      place-items:center;
+    }
+    .noteText{
+      width:min(740px, 92%);
+      font-family: "TextFont", serif;
+      text-align:center;
+      color:#fff;
+      font-size: clamp(26px, 4vw, 54px);
+      line-height:1.18;
+      text-shadow: 0 10px 28px rgba(0,0,0,.55);
+    }
+    .noteSub{
+      margin-top: 18px;
+      opacity:.9;
+      font-size: clamp(16px, 2.2vw, 22px);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    .noteBack{
+      position:absolute;
+      bottom: 16px;
+      left: 16px;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(0,0,0,.35);
+      color:#fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-size: 14px;
+    }
+
+    /* Small responsiveness: keep centered */
+    @media (max-width:520px){
+      .poster{ padding: 46px 22px 30px; }
+      .poster .credit{ right: 14px; bottom: 12px; }
+    }
+
+    /* ---------------------------
+       ADDITION: Confetti (YES click)
+       Lightweight, no library.
+    ----------------------------*/
+    .confettiLayer{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index: 998; /* below fadeOverlay(999), above scenes */
+      overflow:hidden;
+    }
+    .confettiPiece{
+      position:absolute;
+      width: 10px;
+      height: 16px;
+      opacity: 0.95;
+      transform: translate3d(0,0,0) rotate(0deg);
+      will-change: transform, opacity;
+      border-radius: 2px;
+      animation: confettiFall 1200ms ease-out forwards;
+    }
+    @keyframes confettiFall{
+      0%   { transform: translate3d(var(--x0), var(--y0), 0) rotate(var(--r0)); opacity: 0; }
+      10%  { opacity: 1; }
+      100% { transform: translate3d(var(--x1), var(--y1), 0) rotate(var(--r1)); opacity: 0; }
+    }
+
+    /* Scene 3: couple image (addition) */
+    .coupleImg{
+      display:block;
+      width:min(520px, 78vw);
+      height:auto;
+      margin: 18px auto 0;
+      filter: drop-shadow(0 16px 30px rgba(0,0,0,.55));
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- optional SFX (won’t break if missing file) -->
+  <audio id="paperSfx" preload="auto">
+    <source src="./assets/paper.mp3" type="audio/mpeg" />
+  </audio>
+
+  <div class="fadeOverlay" id="fadeOverlay"></div>
+
+  <!-- ADDITION: Confetti Layer -->
+  <div class="confettiLayer" id="confettiLayer" aria-hidden="true"></div>
+
+  <!-- Scene 1 -->
+  <section class="scene active" id="sceneLetter" aria-label="Letter scene">
+    <div class="stage">
+      <div class="poster">
+        <div class="topText">I’VE GOT A LETTER<br/>FOR YOU</div>
+
+        <div class="letterWrap">
+          <!-- put your envelope image here -->
+          <img class="letter" id="letterImg" src="./assets/envelope.png" alt="Letter" />
+        </div>
+
+        <div class="bottomText">OPEN ME</div>
+        <div class="credit">AN AA PRODUCTION</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 2 -->
+  <section class="scene" id="sceneCard" aria-label="Valentine card scene">
+    <div class="stage">
+      <div class="wybmvWrap">
+        <div class="wybmvBox" id="wybmvBox">
+          <!-- baked artwork -->
+          <img class="bg" src="./assets/wybmv.png" alt="Will you be my valentine" />
+
+          <!-- GIF overlay lives INSIDE this box (clipped) -->
+          <div class="gifOverlay" id="gifOverlay">
+            <img id="reactionImg" alt="reaction gif" />
+          </div>
+
+          <!-- buttons inside the box -->
+          <div class="btnRow">
+            <button class="btn" id="yesBtn" aria-label="Yes">
+              <div class="btnBox yes">
+                <div class="btnLabel" id="yesLabel">YES</div>
+              </div>
+            </button>
+
+            <button class="btn" id="noBtn" aria-label="No">
+              <div class="btnBox no">
+                <div class="btnLabel">NO</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 3 -->
+  <section class="scene" id="sceneNote" aria-label="Final note scene">
+    <div class="stage">
+      <div class="noteCard">
+        <button class="noteBack" id="backBtn">← Back</button>
+
+        <div>
+          <div class="noteText" id="noteText">
+            I knew you’d say yes.
+              <br/>
+              I love you babygirl😘
+                <br/>
+            Happy Valentine’s.
+          </div>
+
+          <!-- ADDITION: Couple graphic -->
+          <img class="coupleImg" id="coupleImg" src="./assets/couple1.png" alt="Couple" />
+
+          <div class="noteSub">Click “Back” if you want to replay.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    /* ---------------------------
+       CONFIG: your GIF folders
+       (from your screenshots these are in the project root)
+    ----------------------------*/
+    const YES_GIFS = [
+      "./gifs_yes/1.gif",
+      "./gifs_yes/2.gif",
+    ];
+
+    const NO_GIFS = [
+      "./gifs_no/1.gif",
+      "./gifs_no/2.gif",
+      "./gifs_no/3.gif",
+      "./gifs_no/4.gif",
+      "./gifs_no/5.gif",
+      "./gifs_no/6.gif",
+      "./gifs_no/7.gif",
+    ];
+
+    /* ---------------------------
+       DOM
+    ----------------------------*/
+    const fadeOverlay = document.getElementById("fadeOverlay");
+
+    const sceneLetter = document.getElementById("sceneLetter");
+    const sceneCard   = document.getElementById("sceneCard");
+    const sceneNote   = document.getElementById("sceneNote");
+
+    const letterImg   = document.getElementById("letterImg");
+
+    const yesBtn      = document.getElementById("yesBtn");
+    const noBtn       = document.getElementById("noBtn");
+    const yesLabel    = document.getElementById("yesLabel");
+
+    const gifOverlay  = document.getElementById("gifOverlay");
+    const reactionImg = document.getElementById("reactionImg");
+
+    const paperSfx    = document.getElementById("paperSfx");
+
+    const backBtn     = document.getElementById("backBtn");
+
+    /* ADDITION: Confetti layer ref */
+    const confettiLayer = document.getElementById("confettiLayer");
+
+    /* ---------------------------
+       State
+    ----------------------------*/
+    let gifLock = false;
+    let yesScale = 1;
+
+    /* ---------------------------
+       Helpers
+    ----------------------------*/
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    async function fadeTo(fromEl, toEl, { fadeMs = 260, holdMs = 120 } = {}) {
+      // tiny fade so it feels intentional
+      fadeOverlay.classList.add("on");
+      await sleep(fadeMs);
+      fromEl.classList.remove("active");
+      toEl.classList.add("active");
+      await sleep(holdMs);
+      fadeOverlay.classList.remove("on");
+    }
+
+    function pick(list){
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    async function playGifFrom(list, { showMs = 900, totalMs = 1300 } = {}) {
+      const gif = pick(list);
+
+      // cache-bust so GIF restarts even if same one repeats
+      reactionImg.src = gif + "?v=" + Date.now();
+
+      gifOverlay.classList.add("show");
+      await sleep(showMs);
+
+      gifOverlay.classList.remove("show");
+      await sleep(totalMs - showMs);
+
+      reactionImg.src = "";
+    }
+
+    function safePlayAudio(audioEl){
+      if (!audioEl) return;
+      // if file missing, browsers may reject; ignore silently
+      audioEl.currentTime = 0;
+      audioEl.play().catch(() => {});
+    }
+
+    /* ---------------------------
+       ADDITION: Confetti burst
+    ----------------------------*/
+    function burstConfetti({ count = 120 } = {}) {
+      if (!confettiLayer) return;
+
+      const rect = confettiLayer.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height * 0.30; // slightly above center (cinematic)
+
+      // a restrained palette that fits your aesthetic (white/red + subtle accents)
+      const colors = ["#ffffff", "#ff2b2b", "#ffd1d1", "#ffe6e6", "#f7f7f7"];
+
+      // clear any prior confetti (keeps it clean)
+      confettiLayer.innerHTML = "";
+
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement("div");
+        el.className = "confettiPiece";
+
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        el.style.background = color;
+
+        // start near burst point
+        const x0 = (cx + (Math.random() - 0.5) * 40) + "px";
+        const y0 = (cy + (Math.random() - 0.5) * 20) + "px";
+
+        // end further down + sideways spread
+        const spreadX = (Math.random() - 0.5) * rect.width * 0.9;
+        const fallY = rect.height * (0.55 + Math.random() * 0.35);
+
+        const x1 = (cx + spreadX) + "px";
+        const y1 = (cy + fallY) + "px";
+
+        // rotations
+        const r0 = (Math.random() * 180) + "deg";
+        const r1 = (720 + Math.random() * 720) + "deg";
+
+        // size variety
+        const w = 6 + Math.random() * 10;
+        const h = 10 + Math.random() * 18;
+        el.style.width = w + "px";
+        el.style.height = h + "px";
+
+        // slight per-piece delay
+        const delay = Math.random() * 140;
+        el.style.animationDelay = delay + "ms";
+
+        el.style.setProperty("--x0", x0);
+        el.style.setProperty("--y0", y0);
+        el.style.setProperty("--x1", x1);
+        el.style.setProperty("--y1", y1);
+        el.style.setProperty("--r0", r0);
+        el.style.setProperty("--r1", r1);
+
+        confettiLayer.appendChild(el);
+      }
+
+      // cleanup after animation
+      window.setTimeout(() => {
+        if (confettiLayer) confettiLayer.innerHTML = "";
+      }, 1700);
+    }
+
+    /* ---------------------------
+       Scene 1: click letter => scene 2
+    ----------------------------*/
+    letterImg.addEventListener("click", async () => {
+      safePlayAudio(paperSfx);
+      await fadeTo(sceneLetter, sceneCard, { fadeMs: 260, holdMs: 120 });
+    });
+
+    /* ---------------------------
+       Scene 2: NO => random NO gif inside box, then back to normal
+    ----------------------------*/
+    noBtn.addEventListener("click", async () => {
+      if (gifLock) return;
+      gifLock = true;
+
+      // grow YES every time NO is clicked
+      yesScale = Math.min(yesScale + 0.12, 1.95);
+      yesBtn.style.transform = `scale(${yesScale})`;
+
+      await playGifFrom(NO_GIFS, { showMs: 900, totalMs: 1300 });
+
+      gifLock = false;
+    });
+
+    /* ---------------------------
+       Scene 2: YES => random YES gif inside box, then scene 3
+       ADDITION: confetti burst
+    ----------------------------*/
+    yesBtn.addEventListener("click", async () => {
+      if (gifLock) return;
+      gifLock = true;
+
+      safePlayAudio(paperSfx);
+
+      // ADDITION: confetti immediately on YES click
+      burstConfetti({ count: 120 });
+
+      await playGifFrom(YES_GIFS, { showMs: 950, totalMs: 1400 });
+
+      // micro delay then transition to note
+      await fadeTo(sceneCard, sceneNote, { fadeMs: 280, holdMs: 140 });
+
+      gifLock = false;
+    });
+
+    /* ---------------------------
+       Scene 3: back => reset + scene 2
+    ----------------------------*/
+    backBtn.addEventListener("click", async () => {
+      yesScale = 1;
+      yesBtn.style.transform = "scale(1)";
+      await fadeTo(sceneNote, sceneCard, { fadeMs: 240, holdMs: 90 });
+    });
+
+    /* Optional: If your envelope filename differs, this will fail silently.
+       Quick check: if the envelope isn't loading, rename to assets/envelope.png
+    */
+    letterImg.addEventListener("error", () => {
+      // you can swap to a different filename if needed:
+      // letterImg.src = "./assets/envelope.jpg";
+    });
+
+  </script>
+</body>
+</html>
