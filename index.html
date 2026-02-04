@@ -362,6 +362,28 @@
       user-select:none;
       -webkit-user-drag:none;
     }
+
+/* Scene 3 – Dog gif under text */
+.loveGifWrap{
+  margin-top: 22px;
+  display:flex;
+  justify-content:center;
+  opacity:0;
+  transform: translateY(8px);
+  transition: opacity 420ms ease, transform 420ms ease;
+}
+.loveGifWrap.show{
+  opacity:1;
+  transform: translateY(0);
+}
+.loveGif{
+  width: min(420px, 72vw);
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.55);
+  user-select:none;
+  -webkit-user-drag:none;
+}
   </style>
 </head>
 <body>
@@ -433,6 +455,16 @@
                 <br/>
             Happy Valentine’s.
           </div>
+
+<!-- Dog gif under text -->
+<div class="loveGifWrap" id="loveGifWrap">
+  <img
+    src="./assets/lady-and-the-tramp.gif"
+    alt="Lady and the Tramp spaghetti kiss"
+    class="loveGif"
+  />
+</div>
+
           <div class="noteSub">Click “Back” if you want to replay.</div>
         </div>
       </div>
@@ -475,6 +507,8 @@
     const backBtn     = document.getElementById("backBtn");
 
     const confettiLayer = document.getElementById("confettiLayer");
+    const loveGifWrap = document.getElementById("loveGifWrap");
+
 
     let gifLock = false;
     let yesScale = 1;
@@ -587,12 +621,17 @@
 
       await fadeTo(sceneCard, sceneNote, { fadeMs: 280, holdMs: 140 });
 
+      // reveal dog gif under the text
+      await sleep(220);
+      if (loveGifWrap) loveGifWrap.classList.add("show");
+
       gifLock = false;
     });
 
     backBtn.addEventListener("click", async () => {
       yesScale = 1;
       yesBtn.style.transform = "scale(1)";
+      if (loveGifWrap) loveGifWrap.classList.remove("show");
       await fadeTo(sceneNote, sceneCard, { fadeMs: 240, holdMs: 90 });
     });
 
